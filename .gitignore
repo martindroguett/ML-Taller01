@@ -42,7 +42,7 @@ obsidian_vault/**/*.md
 # docs/*.fls
 # docs/*.fdb_latexmk
 # docs/*.synctex.gz
-docs/ .gitkeep
+# docs/*.gitkeep
 
 # Sistema
 .DS_Store
