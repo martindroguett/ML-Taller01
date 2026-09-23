@@ -4,10 +4,15 @@ Toda ruta se calcula desde la raíz del repositorio para que el pipeline
 funcione igual si se ejecuta `python main.py` desde cualquier cwd.
 """
 
+import os
+from dotenv import load_dotenv
 from pathlib import Path
 
 # Raíz del repositorio (un nivel sobre src/).
 RAIZ = Path(__file__).resolve().parent.parent
+
+RUTA_ENV = RAIZ / ".env"
+load_dotenv(RUTA_ENV)
 
 DATA_DIR = RAIZ / "data"
 RUTA_URLS = DATA_DIR / "urls.csv"
@@ -34,3 +39,7 @@ GOOGLE_NEWS_PARAMS_BASE = {
 }
 
 COLUMNAS_URLS = ["id_noticia", "fuente", "url", "categoria_busqueda"]
+
+# Config carga el .env para poder ejecutarse de manera independiente
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL")
