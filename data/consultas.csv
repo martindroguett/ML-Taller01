@@ -1,4 +1,7 @@
 consulta,categoria_busqueda,limite
-homicidio Chile,homicidio,5
-trafico de drogas Chile,trafico_drogas,5
-robo con violencia Chile,robo_con_violencia,5
+consulta,categoria_busqueda,limite
+tren de aragua Chile,crimen_organizado,15
+los gallegos Chile,crimen_organizado,12
+secuestro extorsivo detenidos Chile,delitos_violentos,12
+trata de personas Chile,trata_personas,12
+banda extranjera formalizados homicidio Chile,crimen_organizado,12
