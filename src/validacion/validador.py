@@ -9,6 +9,8 @@ from pathlib import Path
 
 from src.excepciones import EtapaPendienteAlumno
 
+import json
+
 
 class ValidadorJSON:
     """Comprueba que cada archivo JSON cumpla el contrato de datos."""
@@ -37,6 +39,10 @@ class ValidadorJSON:
         3. Verificar tipos mínimos (listas en delitos, personas, etc.).
         4. Registrar JSON inválidos para Data Understanding.
         """
+
+
+        json_noticia = json.loads()
+
         raise EtapaPendienteAlumno(
             modulo="src.validacion.validador.ValidadorJSON.validar",
             pista=(

@@ -11,6 +11,12 @@ from abc import ABC, abstractmethod
 from src.excepciones import EtapaPendienteAlumno
 from src.modelos import NoticiaFuente
 
+from src.config import GEMINI_API_KEY, GEMINI_MODEL
+from src.adquisicion.repositorio import RepositorioNoticias
+
+
+import json
+from google import generativeai as genai
 
 class ExtractorLLM(ABC):
     """Interfaz de cualquier extractor basado en modelo generativo."""
@@ -35,6 +41,17 @@ class ExtractorGemini(ExtractorLLM):
     5. Si un campo no aparece en la noticia, usar null o lista vacía.
     """
 
+    def __init__(
+            self,
+            repositorio: RepositorioNoticias | None = None,
+            ):
+
+        self.repositorio = repositorio or RepositorioNoticias()
+
+        genai.configure(api_key=GEMINI_API_KEY)
+        self.model = genai.GenerativeModel(model_name=GEMINI_MODEL)
+
+
     CAMPOS_OBLIGATORIOS = [
         "id_noticia",
         "titulo",
@@ -51,23 +68,73 @@ class ExtractorGemini(ExtractorLLM):
     ]
 
     def construir_prompt(self, noticia: NoticiaFuente) -> str:
-        # TODO(alumno): reemplazar este método. Debe exigir JSON válido y
-        # prohibir inventar entidades, roles o relaciones.
-        raise EtapaPendienteAlumno(
-            modulo="src.extraccion.gemini.ExtractorGemini.construir_prompt",
-            pista=(
-                "Diseñe un prompt estricto con los campos "
-                f"{self.CAMPOS_OBLIGATORIOS} y el texto de la noticia."
-            ),
-        )
+
+        return f"""
+            Eres un sistema de extracción de información. Tu única tarea es
+            leer la noticia delictual a continuación y devolver un JSON que describa
+            ÚNICAMENTE lo que el texto dice explícitamente.
+
+            REGLAS OBLIGATORIAS:
+            1. No inventes personas, organizaciones, lugares, delitos ni relaciones que
+            no estén mencionados literalmente en el texto.
+            2. Si un dato no aparece en la noticia, usa null (para strings/objetos) o
+            una lista vacía [] (para arreglos). Nunca completes con suposiciones.
+            3. Distingue con cuidado los roles de las personas: detenido, imputado,
+            acusado, condenado, víctima y testigo NO son equivalentes. Usa el rol
+            exacto que el texto atribuye a cada persona, o null si no es claro.
+            4. No afirmes culpabilidad si el texto no lo dice de forma explícita
+            (por ejemplo, "imputado" no equivale a "culpable").
+            5. Cada relación en "relaciones" debe estar respaldada por una frase
+            concreta del texto; si no puedes citar esa frase, no la incluyas.
+            6. Devuelve EXCLUSIVAMENTE JSON válido: sin texto antes ni después, sin
+            bloques de código Markdown (nada de ```json), sin explicaciones ni preguntas.
+
+            ESQUEMA JSON EXACTO (usa estas claves, en este orden, sin agregar ni omitir):
+            {{
+                "id_noticia": string,
+                "titulo": string | null,
+                "fecha_publicacion": string | null,
+                "fuente": string | null,
+                "url": string | null,
+                "resumen": string | null,
+                "delitos": [string, ...],
+                "personas": [{{"nombre": string, "rol": string | null}}, ...],
+                "organizaciones": [string, ...],
+                "lugares": [string, ...],
+                "objetos": [{{"tipo": string, "nombre": string, "cantidad": number | null, "unidad": string | null}}, ...],
+                "relaciones": [{{"origen": string, "tipo": string, "destino": string}}, ...]
+            }}
+
+            Campos obligatorios (deben existir todos, aunque queden en null o []):
+            {self.CAMPOS_OBLIGATORIOS}
+
+            DATOS CONOCIDOS DE ESTA NOTICIA (úsalos tal cual, no los reinterpretes):
+            - id_noticia: {noticia.id_noticia}
+            - fuente: {noticia.fuente}
+            - url: {noticia.url}
+
+            NOTICIA:
+            \"\"\"
+            {noticia.texto_limpio}
+            \"\"\"
+
+            Responde solo con el JSON.
+            Equivocarse es tremendamente perjudicial para el análisis. 
+            Revisa la noticia las veces que sea necesario si hay algo que no está claro.
+            """ 
+
 
     def extraer(self, noticia: NoticiaFuente) -> dict:
-        # TODO(alumno): llamar a google.generativeai, parsear response.text
-        # y guardar data/json/{id_noticia}.json
-        raise EtapaPendienteAlumno(
-            modulo="src.extraccion.gemini.ExtractorGemini.extraer",
-            pista=(
-                "Configure genai con GEMINI_API_KEY, genere el contenido y "
-                "devuelva un dict. No suba la clave a GitHub."
-            ),
-        )
+        try:
+
+            response = self.model.generate_content(
+                self.construir_prompt(noticia)
+            )
+
+            json_noticia = json.loads(response.text)
+            self.repositorio.guardar_json(noticia, json_noticia)
+            return json_noticia
+        
+        except (Exception):
+            print(f"La noticia {noticia.id_noticia} falló en su extracción:")
+            return None
