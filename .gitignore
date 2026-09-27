@@ -47,3 +47,4 @@ obsidian_vault/**/*.md
 # Sistema
 .DS_Store
 *.swp
+obsidian_vault/.obsidian/

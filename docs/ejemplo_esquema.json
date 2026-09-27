@@ -1,0 +1,68 @@
+{
+  "id_noticia": "N001",
+  "titulo": "Operativo en Estación Central desbarata célula del Tren de Aragua vinculada a secuestros",
+  "fecha_publicacion": "2024-03-15",
+  "fuente": "Infobae",
+  "url": "https://news.google.com/rss/articles/N001_mock",
+  "resumen": "La PDI y el Ministerio Público detuvieron a tres integrantes de una célula del Tren de Aragua tras un operativo en Estación Central. Se incautaron armas de fuego, municiones y drogas en el inmueble allanado.",
+  "delitos": [
+    "secuestro extorsivo",
+    "trafico de drogas",
+    "porte ilegal de armas"
+  ],
+  "personas": [
+    {
+      "nombre": "Carlos González",
+      "rol": "imputado"
+    },
+    {
+      "nombre": "Manuel Rivas",
+      "rol": "imputado"
+    },
+    {
+      "nombre": "Juan Pérez",
+      "rol": "victima"
+    }
+  ],
+  "organizaciones": [
+    "Tren de Aragua",
+    "Policía de Investigaciones",
+    "Fiscalía de Chile"
+  ],
+  "lugares": [
+    "Estación Central",
+    "Santiago",
+    "Chile"
+  ],
+  "objetos": [
+    {
+      "tipo": "arma de fuego",
+      "nombre": "Pistola Glock 9mm",
+      "cantidad": 2.0,
+      "unidad": "unidades"
+    },
+    {
+      "tipo": "sustancia",
+      "nombre": "Ketamina",
+      "cantidad": 3.5,
+      "unidad": "kilos"
+    }
+  ],
+  "relaciones": [
+    {
+      "origen": "Carlos González",
+      "tipo": "miembro_de",
+      "destino": "Tren de Aragua"
+    },
+    {
+      "origen": "Carlos González",
+      "tipo": "secuestro_a",
+      "destino": "Juan Pérez"
+    },
+    {
+      "origen": "Policía de Investigaciones",
+      "tipo": "detuvo_a",
+      "destino": "Carlos González"
+    }
+  ]
+}
