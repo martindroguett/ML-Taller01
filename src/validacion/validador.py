@@ -66,17 +66,3 @@ class ValidadorJSON:
                     f"llegó {type(data[campo]).__name__}."
                 )
         return data
-
-    def validar_directorio(self, dir_json: Path = DIR_JSON) -> tuple[list[dict], list[str]]:
-        """Valida todos los JSON de la carpeta. Devuelve (validos, errores)."""
-        validos = []
-        errores = []
-        for ruta in sorted(dir_json.glob("*.json")):
-            try:
-                validos.append(self.validar(ruta))
-            except ValueError as exc:
-                errores.append(str(exc))
-        print(f" Validados: {len(validos)} | invalidos: {len(errores)}")
-        for error in errores:
-            print(f"   - {error}")
-        return validos, errores
