@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.config import DIR_JSON
 
 import json
 
