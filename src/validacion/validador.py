@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.excepciones import EtapaPendienteAlumno
+from src.config import DIR_JSON
 
 import json
 
@@ -30,23 +30,53 @@ class ValidadorJSON:
         "relaciones",
     ]
 
+    CAMPOS_LISTA = [
+        "delitos",
+        "personas",
+        "organizaciones",
+        "lugares",
+        "objetos",
+        "relaciones",
+    ]
+
     def validar(self, ruta: str | Path) -> dict:
-        """Lee, parsea y valida un JSON. Debe lanzar ValueError si falta un campo.
+        """Lee, parsea y valida un JSON. Lanza ValueError si falta un campo.
 
-        TODO(alumno):
-        1. Cargar el archivo con json.loads.
-        2. Verificar que existan CAMPOS_OBLIGATORIOS.
-        3. Verificar tipos mínimos (listas en delitos, personas, etc.).
-        4. Registrar JSON inválidos para Data Understanding.
         """
+        ruta = Path(ruta)
 
+        try:
+            data = json.loads(ruta.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"Error leyendo/parsing {ruta}: {exc}") from exc
 
-        json_noticia = json.loads()
+        if not isinstance(data, dict):
+            raise ValueError(f"El archivo {ruta} no contiene un objeto JSON (dict).")
 
-        raise EtapaPendienteAlumno(
-            modulo="src.validacion.validador.ValidadorJSON.validar",
-            pista=(
-                "Implemente json.loads y compare las claves del documento "
-                f"contra {self.CAMPOS_OBLIGATORIOS}."
-            ),
-        )
+        faltantes = [campo for campo in self.CAMPOS_OBLIGATORIOS if campo not in data]
+        if faltantes:
+            raise ValueError(
+                f"El archivo {ruta} no contiene los campos obligatorios: {faltantes}"
+            )
+
+        for campo in self.CAMPOS_LISTA:
+            if not isinstance(data[campo], list):
+                raise ValueError(
+                    f"El archivo {ruta}: el campo '{campo}' debe ser una lista, "
+                    f"llegó {type(data[campo]).__name__}."
+                )
+        return data
+
+    def validar_directorio(self, dir_json: Path = DIR_JSON) -> tuple[list[dict], list[str]]:
+        """Valida todos los JSON de la carpeta. Devuelve (validos, errores)."""
+        validos = []
+        errores = []
+        for ruta in sorted(dir_json.glob("*.json")):
+            try:
+                validos.append(self.validar(ruta))
+            except ValueError as exc:
+                errores.append(str(exc))
+        print(f" Validados: {len(validos)} | invalidos: {len(errores)}")
+        for error in errores:
+            print(f"   - {error}")
+        return validos, errores
