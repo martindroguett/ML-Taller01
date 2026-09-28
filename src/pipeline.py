@@ -127,20 +127,21 @@ class PipelineLaboratorio:
             print("No hay textos en data/processed/. Ejecute primero: python main.py capturar")
 
     def ejecutar_obsidian(self) -> None:
-        """TODO(alumno): JSON → notas Markdown enlazadas."""
+        """JSON validado → red de notas Markdown enlazadas."""
         print("== Etapa: obsidian (vault) ==")
         try:
-            self.escritor.escribir_vault([])
-        except EtapaPendienteAlumno as pendiente:
-            print(pendiente)
+            self.escritor.escribir_vault()
+        except OSError as exc:
+            print(f"  Error de escritura del vault: {exc}")
 
     def ejecutar_analisis(self) -> None:
-        """TODO(alumno): Data Understanding y visualizaciones."""
+        """Data Understanding y visualizaciones sobre el corpus."""
         print("== Etapa: analizar (Data Understanding) ==")
+        self.explorador.ejecutar()
         try:
             self.explorador.ejecutar()
-        except EtapaPendienteAlumno as pendiente:
-            print(pendiente)
+        except Exception as exc:
+            print(f"  No se pudo completar el analisis: {exc}")
 
     def ejecutar_pipeline(self) -> None:
         """Corre lo implementado y avisa las etapas que el alumno debe completar."""
