@@ -9,6 +9,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import time
+
 from src.adquisicion.fabrica import FabricaCapturadores
 from src.adquisicion.google_news import DescubridorGoogleNews
 from src.adquisicion.http import ClienteHTTP
@@ -115,17 +117,35 @@ class PipelineLaboratorio:
 
     def ejecutar_extraccion(self) -> None:
         """TODO(alumno): Gemini + validación JSON."""
+
+        exitos = 0
+        fallos = 0
+        saltos = 0
+
         print("== Etapa: extraer (Gemini) ==")
         noticias = self._leer_urls()
-        try:
-            for noticia in noticias:
-                noticia.texto_limpio = self.repositorio.leer_texto(noticia.id_noticia)
-                self.extractor.extraer(noticia)
-        except EtapaPendienteAlumno as pendiente:
-            print(pendiente)
-        except FileNotFoundError:
-            print("No hay textos en data/processed/. Ejecute primero: python main.py capturar")
+        for noticia in noticias:
 
+            if (self.repositorio.dir_json / f"{noticia.id_noticia}.json").exists():
+                saltos += 1
+                continue
+
+            try:
+                noticia.texto_limpio = self.repositorio.leer_texto(noticia.id_noticia)
+
+            except FileNotFoundError:
+                print(f"No hay textos de {noticia.id_noticia} en data/processed/")
+
+            res = self.extractor.extraer(noticia)
+
+            if (res is None):
+                fallos += 1
+
+            else:
+                exitos += 1
+
+            time.sleep(15)
+                
     def ejecutar_obsidian(self) -> None:
         """JSON validado → red de notas Markdown enlazadas."""
         print("== Etapa: obsidian (vault) ==")

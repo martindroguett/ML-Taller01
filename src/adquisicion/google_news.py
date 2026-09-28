@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import urlencode, urlparse
 
 import feedparser
+from googlenewsdecoder import gnewsdecoder
 
 from src.adquisicion.http import ClienteHTTP
 from src.config import (
@@ -61,7 +62,10 @@ class DescubridorGoogleNews:
 
     def resolver_url_final(self, link_google: str) -> str:
         """Sigue las redirecciones hasta la URL del medio original."""
-        return self.cliente.url_final(link_google)
+        resultado = gnewsdecoder(link_google)
+        if not resultado.get("success"):
+            raise ValueError(resultado.get("message", "Fallo desconocido del decodificador"))
+        return resultado["decoded_url"]
 
     def _fuente_desde_entrada(self, entrada, url_final: str) -> str:
         fuente = ""
@@ -120,7 +124,7 @@ class DescubridorGoogleNews:
             print(f"  [Google News] Buscando: {texto!r} (máx. {limite})")
             try:
                 entradas = self.buscar(texto, limite=limite)
-            except Exception as exc:  # noqa: BLE001 — el lote no debe abortar
+            except Exception as exc:  
                 print(f"    Error al leer RSS: {exc}")
                 continue
 
@@ -160,3 +164,26 @@ class DescubridorGoogleNews:
 
         self._escribir_urls(existentes)
         return nuevos
+
+    def reparar_urls_existentes(self) -> tuple[int, int]:
+        """Reintenta resolver_url_final sobre filas ya guardadas con link roto."""
+
+        filas = self._leer_urls()
+        ok, fallos = 0, 0
+        for fila in filas:
+            url_actual = fila.get("url", "")
+            if "news.google.com" not in url_actual:
+                continue 
+
+            try:
+                fila["url"] = self.resolver_url_final(url_actual)
+                ok += 1
+                print(f"  [{fila['id_noticia']}] reparada → {fila['url']}")
+            except Exception as exc:
+                fallos += 1
+                print(f"  [{fila['id_noticia']}] no se pudo reparar: {exc}")
+
+        self._escribir_urls(filas)
+        print(f"Reparación finalizada: {ok} ok, {fallos} fallos")
+        return ok, fallos
+

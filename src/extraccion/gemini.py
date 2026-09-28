@@ -88,6 +88,7 @@ class ExtractorGemini(ExtractorLLM):
             concreta del texto; si no puedes citar esa frase, no la incluyas.
             6. Devuelve EXCLUSIVAMENTE JSON válido: sin texto antes ni después, sin
             bloques de código Markdown (nada de ```json), sin explicaciones ni preguntas.
+            7. Normaliza el nombre de la fuente, por ejemplo teletrece.cl es lo mismo que T13 o que TeleTrece. Déjalos todos en un mismo formato.
 
             ESQUEMA JSON EXACTO (usa estas claves, en este orden, sin agregar ni omitir):
             {{
