@@ -14,7 +14,8 @@ from pathlib import Path
 from src.config import DIR_VAULT, DIR_JSON
 
 from collections import defaultdict
-from src.conocimiento.utilidades import enlace_obsidian, normalizar_entidad, slugify
+from src.conocimiento.utilidades import (categoria_delito, enlace_obsidian,
+                                          normalizar_entidad, slugify)
 
 class EscritorObsidian(ABC):
     """Contrato para generar la bóveda a partir de JSON validado."""
@@ -88,6 +89,19 @@ class EscritorVaultObsidian(EscritorObsidian):
                     return valor.strip()
         return ""
 
+    @classmethod
+    def _clave_entidad(cls, campo: str, nombre: str) -> str:
+        """Nombre canonico de la entidad para el vault.
+
+        Los delitos se agrupan por categoria amplia: con 40 noticias hay
+        decenas de frases distintas ("robo con violencia e intimidacion") y
+        una nota por frase no conecta nada. La frase original se conserva
+        como texto en la nota de la noticia.
+        """
+        if campo == "delitos":
+            return categoria_delito(nombre)
+        return normalizar_entidad(nombre)
+
     def cargar_noticias(self) -> list[dict]:
         """Lee data/json/*.json y valida lo minimo de cada archivo."""
         noticias = []
@@ -154,9 +168,10 @@ class EscritorVaultObsidian(EscritorObsidian):
 
         #listar delitos
         for crime in data.get("delitos") or []:
-            nombre = normalizar_entidad(self._nombre(crime))
-            if nombre:
-                lineas.append(f"- {enlace_obsidian(nombre)}")
+            original = self._nombre(crime)
+            categoria = categoria_delito(original)
+            if categoria:
+                lineas.append(f"- {enlace_obsidian(categoria)} — {original}")
 
         #listar personas cn su rol
         lineas.append("\n## Personas\n")
@@ -241,7 +256,7 @@ class EscritorVaultObsidian(EscritorObsidian):
             for campo, (carpeta, tipo, subtipo) in self.CAMPOS.items():
                 for entidad in noticia.get(campo) or []:
                     nombre = self._nombre(entidad)
-                    archivo = normalizar_entidad(nombre)
+                    archivo = self._clave_entidad(campo, nombre)
                     if not archivo:
                         continue
                     clave = (carpeta, archivo)
@@ -341,7 +356,7 @@ class EscritorVaultObsidian(EscritorObsidian):
             id_noticia = noticia.get("id_noticia") or "N000"
             for campo, (carpeta, tipo, subtipo) in self.CAMPOS.items():
                 for entidad in noticia.get(campo) or []:
-                    archivo = normalizar_entidad(self._nombre(entidad))
+                    archivo = self._clave_entidad(campo, self._nombre(entidad))
                     if not archivo:
                         continue
                     conteo[(carpeta, archivo)].add(id_noticia)
