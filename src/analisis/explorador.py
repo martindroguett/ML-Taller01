@@ -17,6 +17,7 @@ from matplotlib.ticker import MaxNLocator
 from src.config import DIR_JSON, RAIZ
 
 from matplotlib.colors import LinearSegmentedColormap
+from src.conocimiento.utilidades import categoria_delito, normalizar_entidad
 
 DIR_FIGURAS = RAIZ / "reportes" / "figuras"
 
@@ -131,22 +132,24 @@ class ExploradorDatos:
     def delitos_frecuentes(self) -> None:
         """Top 10 de delitos mencionados en el corpus."""
         df = self.cargar()
-        delitos = df["delitos"].explode().dropna()
-        conteo = delitos.value_counts().head(10)
+        serie = df["delitos"].explode().dropna().map(categoria_delito)
+        serie = serie[serie != ""]
+        conteo = serie.value_counts().head(10)
         self._barras(conteo,
-                     "Delitos más frecuentes en el corpus",
-                     f"{len(df)} noticias | {len(delitos)} menciones de delitos",
+                     "Top 10 de delitos mencionados",
+                     f"{serie.size} menciones · {serie.nunique()} categorías",
                      "Menciones",
                      "02_delitos_frecuentes.png")
-
+        
     def lugares_frecuentes(self) -> None:
-        """Lugares más mencionados en el corpus"""
+        """Lugares más mencionados en el corpus."""
         df = self.cargar()
-        lugares = df["lugares"].explode().dropna()
-        conteo = lugares.value_counts().head(10)
+        serie = df["lugares"].explode().dropna().map(normalizar_entidad)
+        serie = serie[serie != ""]
+        conteo = serie.value_counts().head(12)
         self._barras(conteo,
-                     "Lugares más mencionados en el corpus",
-                     f"{len(df)} noticias | {len(lugares)} menciones de lugares",
+                     "Lugares más mencionados",
+                     f"{serie.size} menciones · {serie.nunique()} lugares distintos",
                      "Menciones",
                      "03_lugares_frecuentes.png")
 
@@ -222,14 +225,15 @@ class ExploradorDatos:
     def organizaciones_frecuentes(self) -> None:
         """Top 10 de organizaciones mencionadas en el corpus."""
         df = self.cargar()
-        organizaciones = df["organizaciones"].explode().dropna()
-        conteo = organizaciones.value_counts().head(10)
+        serie = df["organizaciones"].explode().dropna().map(normalizar_entidad)
+        serie = serie[serie != ""]
+        conteo = serie.value_counts().head(10)
         self._barras(conteo,
-                     "Organizaciones más frecuentes en el corpus",
-                     f"{len(df)} noticias | {len(organizaciones)} menciones de organizaciones",
+                     "Organizaciones más mencionadas",
+                     f"{serie.size} menciones · {serie.nunique()} organizaciones distintas",
                      "Menciones",
                      "06_organizaciones_frecuentes.png")
-
+        
     def personas_frecuentes(self) -> None:
         """Top 10 de personas mencionadas en el corpus."""
         df = self.cargar()
@@ -243,18 +247,23 @@ class ExploradorDatos:
                      "07_personas_frecuentes.png")
 
     def tipos_objetos_incautados(self) -> None:
-        """Top 10 de tipos de objetos incautados mencionados en el corpus."""
+        """Tipos de objetos incautados mas frecuentes en el corpus."""
         df = self.cargar()
         objetos = df["objetos"].explode().dropna()
-        tipos = [o.get("tipo") for o in objetos if isinstance(o, dict)
-                        and "tipo" in o]
-        conteo = pd.Series(tipos).value_counts().head(10)
+        tipos = [normalizar_entidad(o.get("tipo")) for o in objetos
+                 if isinstance(o, dict) and o.get("tipo")]
+        tipos = [t for t in tipos if t]
+        if not tipos:
+            print(" Sin objetos con tipo; no se genera el grafico.")
+            return
+        serie = pd.Series(tipos)
+        conteo = serie.value_counts().head(10)
         self._barras(conteo,
-                        "Tipos de objetos incautados más frecuentes en el corpus",
-                        f"{len(df)} noticias | {len(tipos)} menciones de objetos incautados",
-                        "Menciones",
-                        "08_tipos_objetos_incautados.png")
-
+                     "Tipos de objetos incautados",
+                     f"{serie.size} objetos · {serie.nunique()} categorías",
+                     "Objetos",
+                     "08_tipos_objetos_incautados.png")
+        
     def tipos_relaciones_frecuentes(self) -> None:
         """Tipos de arista del grafo, para ver su densidad semantica."""
         df = self.cargar()
@@ -320,12 +329,14 @@ class ExploradorDatos:
  
         pares = []
         for _, fila in df.iterrows():
-            lugares = [x.strip() for x in (fila.get("lugares") or [])
-                       if isinstance(x, str) and x.strip()]
-            delitos = [x.strip().lower() for x in (fila.get("delitos") or [])
-                       if isinstance(x, str) and x.strip()]
-            for lugar in lugares:
-                for delito in delitos:
+            lugares = [normalizar_entidad(x) for x in (fila.get("lugares") or [])
+                       if isinstance(x, str)]
+            lugares = [x for x in lugares if x]
+            delitos = [categoria_delito(x) for x in (fila.get("delitos") or [])
+                       if isinstance(x, str)]
+            delitos = [x for x in delitos if x]
+            for delito in delitos:
+                for lugar in lugares:
                     pares.append((lugar, delito))
  
         if not pares:

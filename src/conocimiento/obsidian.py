@@ -14,8 +14,7 @@ from pathlib import Path
 from src.config import DIR_VAULT, DIR_JSON
 
 from collections import defaultdict
-from src.conocimiento.utilidades import enlace_obsidian, slugify
-
+from src.conocimiento.utilidades import enlace_obsidian, normalizar_entidad, slugify
 
 class EscritorObsidian(ABC):
     """Contrato para generar la bóveda a partir de JSON validado."""
@@ -155,14 +154,14 @@ class EscritorVaultObsidian(EscritorObsidian):
 
         #listar delitos
         for crime in data.get("delitos") or []:
-            nombre = self._nombre(crime)
+            nombre = normalizar_entidad(self._nombre(crime))
             if nombre:
-                lineas.append(f"- {enlace_obsidian(slugify(nombre).lower())}")
+                lineas.append(f"- {enlace_obsidian(nombre)}")
 
         #listar personas cn su rol
         lineas.append("\n## Personas\n")
         for people in data.get("personas") or []:
-            nombre = self._nombre(people)
+            nombre = normalizar_entidad(self._nombre(people))
             rol = "Rol desconocido"
             if isinstance(people, dict):
                 rol = people.get("rol") or "Rol desconocido"
@@ -170,7 +169,7 @@ class EscritorVaultObsidian(EscritorObsidian):
                 continue
             if "victim" in str(rol).lower():
                 continue
-            lineas.append(f"- {enlace_obsidian(slugify(nombre).lower())} ({rol})")
+            lineas.append(f"- {enlace_obsidian(nombre)} ({rol})")
 
         #listar victimas (en este esquema son personas con rol victima)
         lineas.append("\n## Víctimas\n")
@@ -180,42 +179,44 @@ class EscritorVaultObsidian(EscritorObsidian):
                 rol = people.get("rol") or ""
             if "victim" not in str(rol).lower():
                 continue
-            nombre = self._nombre(people)
+            nombre = normalizar_entidad(self._nombre(people))
             if nombre:
-                lineas.append(f"- {enlace_obsidian(slugify(nombre).lower())}")
+                lineas.append(f"- {enlace_obsidian(nombre)}")
 
         #listar organizaciones
         lineas.append("\n## Organizaciones\n")
         for org in data.get("organizaciones") or []:
-            nombre = self._nombre(org)
+            nombre = normalizar_entidad(self._nombre(org))
             if nombre:
-                lineas.append(f"- {enlace_obsidian(slugify(nombre).lower())}")
+                lineas.append(f"- {enlace_obsidian(nombre)}")
 
         #listar lugares
         lineas.append("\n## Lugares\n")
         for place in data.get("lugares") or []:
-            nombre = self._nombre(place)
+            nombre = normalizar_entidad(self._nombre(place))
             if nombre:
-                lineas.append(f"- {enlace_obsidian(slugify(nombre).lower())}")
+                lineas.append(f"- {enlace_obsidian(nombre)}")
 
         #listar objetos
         lineas.append("\n## Objetos\n")
         for obj in data.get("objetos") or []:
-            nombre_obj = self._nombre(obj)
+            nombre_obj = normalizar_entidad(self._nombre(obj))
             tipo_obj = "objeto"
             if isinstance(obj, dict):
                 tipo_obj = obj.get("tipo") or "objeto"
             if nombre_obj:
-                lineas.append(f"- {enlace_obsidian(slugify(nombre_obj).lower())} ({tipo_obj})")
+                lineas.append(f"- {enlace_obsidian(nombre_obj)} ({tipo_obj})")
 
         #listar relaciones
         lineas.append("\n## Relaciones\n")
         for rel in data.get("relaciones") or []:
             if not isinstance(rel, dict):
                 continue
-            origen = slugify(rel.get("origen") or "Origen desconocido").lower()
+            origen = normalizar_entidad(self._nombre(rel.get("origen")))
+            destino = normalizar_entidad(self._nombre(rel.get("destino")))
             tipo = rel.get("tipo") or "se_relaciona_con"
-            destino = slugify(rel.get("destino") or "Destino desconocido").lower()
+            if not origen or not destino:
+                continue
             lineas.append(f"- {enlace_obsidian(origen)} -- \"{tipo}\" --> {enlace_obsidian(destino)}")
 
         #guardar el archivo
@@ -240,9 +241,9 @@ class EscritorVaultObsidian(EscritorObsidian):
             for campo, (carpeta, tipo, subtipo) in self.CAMPOS.items():
                 for entidad in noticia.get(campo) or []:
                     nombre = self._nombre(entidad)
-                    if not nombre:
+                    archivo = normalizar_entidad(nombre)
+                    if not archivo:
                         continue
-                    archivo = slugify(nombre).lower()
                     clave = (carpeta, archivo)
                     detalle = ""
                     if subtipo and isinstance(entidad, dict):
@@ -257,7 +258,7 @@ class EscritorVaultObsidian(EscritorObsidian):
                 origen = self._nombre(rel.get("origen"))
                 destino = self._nombre(rel.get("destino"))
                 tipo_rel = str(rel.get("tipo") or "se_relaciona_con").strip()
-                if not origen or not destino:
+                if not normalizar_entidad(origen) or not normalizar_entidad(destino):
                     continue
                 archivo_rel = slugify(tipo_rel).lower()
                 relaciones[archivo_rel].add((origen, destino, id_noticia))
@@ -302,8 +303,8 @@ class EscritorVaultObsidian(EscritorObsidian):
             ]
 
             for origen, destino, id_noticia in sorted(registros):
-                origen_link = enlace_obsidian(slugify(origen).lower())
-                destino_link = enlace_obsidian(slugify(destino).lower())
+                origen_link = enlace_obsidian(normalizar_entidad(origen))
+                destino_link = enlace_obsidian(normalizar_entidad(destino))
                 lineas.append(f"- {origen_link} --> {destino_link} (noticia: {enlace_obsidian(id_noticia)})")
 
             ruta = self.vault / "Relaciones" / f"{archivo_rel}.md"
@@ -340,10 +341,9 @@ class EscritorVaultObsidian(EscritorObsidian):
             id_noticia = noticia.get("id_noticia") or "N000"
             for campo, (carpeta, tipo, subtipo) in self.CAMPOS.items():
                 for entidad in noticia.get(campo) or []:
-                    nombre = self._nombre(entidad)
-                    if not nombre:
+                    archivo = normalizar_entidad(self._nombre(entidad))
+                    if not archivo:
                         continue
-                    archivo = slugify(nombre).lower()
                     conteo[(carpeta, archivo)].add(id_noticia)
 
         #una seccion por categoria, ordenada de mas a menos mencionada
@@ -366,8 +366,8 @@ class EscritorVaultObsidian(EscritorObsidian):
             for rel in noticia.get("relaciones") or []:
                 if not isinstance(rel, dict):
                     continue
-                origen = self._nombre(rel.get("origen"))
-                destino = self._nombre(rel.get("destino"))
+                origen = normalizar_entidad(self._nombre(rel.get("origen")))
+                destino = normalizar_entidad(self._nombre(rel.get("destino")))
                 if not origen or not destino:
                     continue
                 tipo_rel = str(rel.get("tipo") or "se_relaciona_con").strip()
