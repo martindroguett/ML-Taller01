@@ -17,7 +17,7 @@ from matplotlib.ticker import MaxNLocator
 from src.config import DIR_JSON, RAIZ
 
 from matplotlib.colors import LinearSegmentedColormap
-from src.conocimiento.utilidades import categoria_delito, normalizar_entidad
+from src.conocimiento.utilidades import (categoria_delito, normalizar_entidad, categoria_objeto, categoria_organizacion, categoria_relacion)
 
 DIR_FIGURAS = RAIZ / "reportes" / "figuras"
 
@@ -225,7 +225,7 @@ class ExploradorDatos:
     def organizaciones_frecuentes(self) -> None:
         """Top 10 de organizaciones mencionadas en el corpus."""
         df = self.cargar()
-        serie = df["organizaciones"].explode().dropna().map(normalizar_entidad)
+        serie = df["organizaciones"].explode().dropna().map(categoria_organizacion)        
         serie = serie[serie != ""]
         conteo = serie.value_counts().head(10)
         self._barras(conteo,
@@ -250,8 +250,8 @@ class ExploradorDatos:
         """Tipos de objetos incautados mas frecuentes en el corpus."""
         df = self.cargar()
         objetos = df["objetos"].explode().dropna()
-        tipos = [normalizar_entidad(o.get("tipo")) for o in objetos
-                 if isinstance(o, dict) and o.get("tipo")]
+        tipos = [categoria_objeto(o.get("nombre") if isinstance(o, dict) else o)
+                 for o in objetos]
         tipos = [t for t in tipos if t]
         if not tipos:
             print(" Sin objetos con tipo; no se genera el grafico.")
@@ -268,10 +268,10 @@ class ExploradorDatos:
         """Tipos de arista del grafo, para ver su densidad semantica."""
         df = self.cargar()
         relaciones = df["relaciones"].explode().dropna()
-        tipos = [r.get("tipo") for r in relaciones if isinstance(r, dict)
-                 and "tipo" in r]
+        tipos = [categoria_relacion(r.get("tipo")) for r in relaciones
+                 if isinstance(r, dict) and r.get("tipo")]
         serie = pd.Series(tipos)
-        conteo = serie.value_counts().head(10)
+        conteo = serie.value_counts().head(12)
         self._barras(conteo,
                      "Tipos de relaciones más frecuentes en el corpus",
                      f"{serie.size} relaciones · {serie.nunique()} tipos distintos",
