@@ -102,6 +102,46 @@ CATEGORIAS_DELITO = [
     ("agresion_sexual",       ("agresion_sexual", "violencia_intrafamiliar")),
 ]
 
+CATEGORIAS_ROL = [
+    ("victima",     ("victima", "afectad", "damnificad")),
+    ("policia",     ("policia", "carabiner", "pdi", "prefecto", "comisario",
+                     "coronel")),
+    ("fiscal",      ("fiscal",)),
+    ("juez",        ("juez", "magistrad")),
+    ("abogado",     ("abogad", "defensor")),
+    ("autoridad",   ("ministr", "subsecretari", "alcalde", "delegad",
+                     "presidente", "senador", "diputad", "gobernador")),
+    ("condenado",   ("condenad",)),
+    ("absuelto",    ("absuelt",)),
+    ("imputado",    ("imputad", "acusad", "formalizad")),
+    ("detenido",    ("detenid", "aprehendid", "capturad", "arrestad")),
+    ("profugo",     ("profug",)),
+    ("abatido",     ("abatid",)),
+    ("denunciante", ("denunciante", "querellante")),
+    ("testigo",     ("testigo",)),
+    ("lider",       ("lider", "cabecilla")),
+    ("integrante",  ("integrante", "miembro", "delincuente", "sicario",
+                     "reclutador", "captor", "secuestrador")),
+]
+
+
+def categoria_rol(rol: str) -> str:
+    """Agrupa el rol de una persona en una categoría amplia.
+
+    Devuelve "" si la noticia no trae rol: es preferible no crear la nota
+    antes que inventar un nodo 'desconocido' que conectaría entre sí a
+    personas que no tienen nada que ver.
+    """
+    if not rol:
+        return ""
+    clave = slugify(rol).lower()
+    if "desconocid" in clave:
+        return ""
+    for categoria, palabras in CATEGORIAS_ROL:
+        for palabra in palabras:
+            if palabra in clave:
+                return categoria
+    return "otro_rol"
 
 def slugify(text: str) -> str:
     """'Tráfico de drogas' → 'Trafico_de_drogas'. Nunca vacío."""
@@ -154,3 +194,158 @@ def categoria_delito(nombre: str) -> str:
 def enlace_obsidian(nombre: str) -> str:
     """Devuelve un wiki-link [[nombre]] para el grafo de Obsidian."""
     return f"[[{nombre}]]"
+
+#Tipos de relacion. Mismo patron que CATEGORIAS_DELITO: gana la primera
+#que calce, asi que el ORDEN es una decision. Tres trampas resueltas por
+#el orden: "lidera investigacion en conjunto con" tiene "lider" pero es
+#una investigacion; "fiscal jefe de" tiene "jefe" pero es un cargo; y
+#"condenado por" va antes que "acusado de" porque una condena no es
+#una acusacion.
+CATEGORIAS_RELACION = [
+    ("investiga",     ("investig", "desbarat", "instruyo")),
+    ("condenado_por", ("conden",)),
+    ("acusado_de",    ("formaliz", "acusad", "imputad", "prision_preventiva")),
+    ("detenido_en",   ("detuv", "detenid", "capturad", "recluid", "aprehend")),
+    ("victima_de",    ("victima", "captor", "secuestr", "asesin", "homicidio",
+                       "crimen_de")),
+    ("representa_a",  ("abogad", "defensor", "patrocinante", "querell")),
+    ("familiar_de",   ("primo", "prima", "hermano", "hermana", "pareja",
+                       "conyuge", "hijo", "hija", "padre", "madre")),
+    ("cargo_en",      ("fiscal", "alcalde", "prefecto", "comisario", "magistrad",
+                       "director", "ejecutiv", "jefe", "ministr", "coronel")),
+    ("lidera",        ("lider", "cabecilla")),
+    ("integra",       ("miembro", "pertenece", "integra", "forma_parte", "faccion",
+                       "celula", "brazo", "unidad", "socio")),
+    ("ocurrio_en",    ("ocurrid", "sector", "interseccion", "provenient", "ubicad")),
+    ("vinculado_a",   ("vinculad", "relacionad", "negoci", "contrat", "suscribi",
+                       "participo", "denunci", "conjunt")),
+]
+
+
+def categoria_relacion(tipo: str) -> str:
+    """Agrupa un tipo de relación en una categoría amplia.
+
+    Con 57 noticias Gemini produjo 84 frases distintas, casi una por
+    relación. Un grafo con 84 tipos de arista no se puede leer; la frase
+    original se conserva como texto en la nota de la noticia.
+    """
+    if not tipo:
+        return "se_relaciona_con"
+    clave = slugify(tipo).lower()
+    for categoria, palabras in CATEGORIAS_RELACION:
+        for palabra in palabras:
+            if palabra in clave:
+                return categoria
+    return "se_relaciona_con"
+
+#Objetos incautados. Un objeto es una CLASE de cosa, no un nombre propio,
+#asi que agrupar es legitimo: "celulares iPhone" y "teléfono celular con
+#SIM card" son la misma clase de evidencia.
+#Trampas resueltas por el orden: "auto bomba" tiene "auto" pero es un
+#explosivo, asi que explosivo va antes que vehiculo; y "dispositivos
+#utilizados para procesar pagos electronicos" tiene "pago" pero es
+#tecnologia, asi que tecnologia va antes que dinero.
+CATEGORIAS_OBJETO = [
+    ("explosivo",      ("explosiv", "bomba", "fuegos_artificiales", "plasticina",
+                        "detonante", "dinamita")),
+    ("droga",          ("droga", "marihuana", "ketamina", "cocaina", "mdma",
+                        "metanfetamina", "estupefacient", "farmac", "clorhidrato",
+                        "impregnada", "comprimidos")),
+    ("arma_de_fuego",  ("arma", "pistola", "armamento", "fusil", "escopeta",
+                        "revolver")),
+    ("municion",       ("municion", "cargador", "calibre")),
+    ("arma_blanca",    ("cuchillo", "machete", "arma_blanca")),
+    ("tecnologia",     ("telefono", "celular", "iphone", "computador", "ipad",
+                        "pendrive", "dispositivo", "tecnolog", "starlink",
+                        "fibra_optica", "antena", "sim_card", "equipos")),
+    ("documento",      ("documento", "pasaporte", "cedula", "contable",
+                        "contrato", "papeles", "registro")),
+    ("dinero",         ("peso", "dinero", "dolar", "millon", "criptomoneda",
+                        "vale_vista", "rescate", "efectivo", "pago")),
+    ("vehiculo",       ("vehiculo", "camioneta", "automovil", "motociclet",
+                        "furgon", "kia", "chevrolet", "hyundai", "renault",
+                        "auto")),
+    ("joya",           ("cadena", "cordon", "plata", "joya", "reloj")),
+    ("restos_humanos", ("restos_humanos", "cadaver", "osamenta")),
+]
+
+
+def categoria_objeto(nombre: str) -> str:
+    """Agrupa un objeto incautado en una categoría amplia.
+
+    Devuelve 'otros_objetos' cuando la frase no dice qué es la cosa
+    ("diversas especies", "elementos que estaban en el piso").
+    """
+    if not nombre:
+        return ""
+    clave = slugify(nombre).lower()
+    for categoria, palabras in CATEGORIAS_OBJETO:
+        for palabra in palabras:
+            if palabra in clave:
+                return categoria
+    return "otros_objetos"
+
+#ORGANIZACIONES. Aca NO se agrupa por categoria: "Tren de Aragua" y
+#"Los Gallegos" tienen que seguir siendo nodos distintos, o el grafo deja
+#de poder responder que banda opera donde. Lo que se junta son las
+#OFICINAS de una misma institucion, que venian fragmentadas por region:
+#habia 20 variantes de Fiscalia y 15 de PDI, cada una como nodo suelto.
+ORGS_IGNORADAS = {
+    "gobierno", "tribunal", "juzgado_de_garantia", "red_de_narcotrafico",
+    "tribunal_de_juicio_oral_en_lo_penal", "corte_de_apelaciones",
+    "policia_nacional", "yahoo", "google", "tiktok",
+}
+
+#medios de prensa: son la FUENTE de la noticia, no un actor del caso.
+#Aparecen como organizacion solo porque Gemini leyo el credito del articulo.
+MEDIOS = ("bio_bio", "biobio", "bbcl", "adn_hoy", "24_horas",
+          "noticias_caracol", "agenciauno")
+
+#instituciones extranjeras que la regla chilena se llevaria por error
+EXTRANJERAS = {
+    "fiscalia_general_de_la_nacion": "fiscalia_general_de_colombia",
+    "fuerzas_armadas_de_la_federacion_rusa": "fuerzas_armadas_de_rusia",
+}
+
+INSTITUCIONES = [
+    ("ministerio_publico", ("fiscalia", "ministerio_publico", "ecoh", "eaco",
+                            "sac_", "sistema_de_analisis",
+                            "unidad_de_crimen_organizado",
+                            "unidad_de_inteligencia", "agrupacion_investigadora")),
+    ("carabineros",        ("carabiner", "os7", "os9", "comisaria")),
+    ("pdi",                ("policia_de_investigaciones", "pdi", "bipe", "brigada",
+                            "bicrim", "prefectura", "criminalistica",
+                            "asuntos_internos", "departamento_v")),
+    ("poder_judicial",     ("juzgado", "tribunal", "corte")),
+    ("gendarmeria",        ("gendarmeria",)),
+    ("aduanas_chile",      ("servicio_nacional_de_aduanas",)),
+    ("armada_de_chile",    ("armada_de_chile", "directemar", "policia_maritima")),
+    ("cancilleria",        ("cancilleria",)),
+    ("interpol",           ("interpol",)),
+]
+
+VARIANTES_ORG = {
+    "aduanas": "aduanas_chile",
+    "mafia_hong_men": "mafia_hongmen",
+    "los_piratas_de_aragua": "los_piratas",
+    "epanda": "change_panda_spa",
+    "policia_de_peru": "policia_nacional_peruana",
+}
+
+
+def categoria_organizacion(nombre: str) -> str:
+    """Nombre canónico de una organización. Devuelve "" si hay que omitirla."""
+    if not nombre:
+        return ""
+    clave = slugify(nombre).lower()
+    if clave in ORGS_IGNORADAS:
+        return ""
+    if any(medio in clave for medio in MEDIOS):
+        return ""
+    if clave in EXTRANJERAS:
+        return EXTRANJERAS[clave]
+    for institucion, palabras in INSTITUCIONES:
+        for palabra in palabras:
+            if palabra in clave:
+                return institucion
+    return VARIANTES_ORG.get(clave, clave)
