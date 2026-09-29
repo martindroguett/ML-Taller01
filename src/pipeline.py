@@ -116,8 +116,6 @@ class PipelineLaboratorio:
         return ok, fallos
 
     def ejecutar_extraccion(self) -> None:
-        """TODO(alumno): Gemini + validación JSON."""
-
         exitos = 0
         fallos = 0
         saltos = 0
@@ -135,6 +133,7 @@ class PipelineLaboratorio:
 
             except FileNotFoundError:
                 print(f"No hay textos de {noticia.id_noticia} en data/processed/")
+                continue
 
             res = self.extractor.extraer(noticia)
 
@@ -144,7 +143,7 @@ class PipelineLaboratorio:
             else:
                 exitos += 1
 
-            time.sleep(15)
+            print(f"éxitos: {exitos}, fallos: {fallos}, saltos: {saltos}")
                 
     def ejecutar_obsidian(self) -> None:
         """JSON validado → red de notas Markdown enlazadas."""
