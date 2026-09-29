@@ -135,7 +135,7 @@ def categoria_rol(rol: str) -> str:
     if not rol:
         return ""
     clave = slugify(rol).lower()
-    if "desconocid" in clave:
+    if "desconocido" in clave:
         return ""
     for categoria, palabras in CATEGORIAS_ROL:
         for palabra in palabras:

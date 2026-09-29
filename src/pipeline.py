@@ -9,8 +9,6 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-import time
-
 from src.adquisicion.fabrica import FabricaCapturadores
 from src.adquisicion.google_news import DescubridorGoogleNews
 from src.adquisicion.http import ClienteHTTP
@@ -141,7 +139,13 @@ class PipelineLaboratorio:
                 fallos += 1
 
             else:
-                exitos += 1
+                try:
+                    self.validador.validar(self.repositorio.dir_json / f"{noticia.id_noticia}.json")
+                    exitos += 1
+
+                except ValueError as e:
+                    print(f"{noticia.id_noticia} posee JSON inválido: {e}")
+                    fallos += 1
 
             print(f"éxitos: {exitos}, fallos: {fallos}, saltos: {saltos}")
                 
