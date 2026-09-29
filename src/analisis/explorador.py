@@ -17,7 +17,7 @@ from matplotlib.ticker import MaxNLocator
 from src.config import DIR_JSON, RAIZ
 
 from matplotlib.colors import LinearSegmentedColormap
-from src.conocimiento.utilidades import (categoria_delito, normalizar_entidad, categoria_objeto, categoria_organizacion, categoria_relacion)
+from src.conocimiento.utilidades import (categoria_delito, normalizar_entidad, categoria_objeto, categoria_organizacion, categoria_relacion, categoria_rol)
 
 DIR_FIGURAS = RAIZ / "reportes" / "figuras"
 
@@ -387,6 +387,37 @@ class ExploradorDatos:
  
         self._guardar(fig, "11_delitos_por_zona.png")
 
+    def roles_de_personas(self) -> None:
+        """Roles de las personas mencionadas: de quién habla la prensa."""
+        df = self.cargar()
+        roles = []
+        sin_rol = 0
+        for personas in df["personas"]:
+            if not isinstance(personas, list):
+                continue
+            for persona in personas:
+                if not isinstance(persona, dict):
+                    continue
+                categoria = categoria_rol(persona.get("rol"))
+                if categoria:
+                    roles.append(categoria)
+                else:
+                    sin_rol += 1
+
+        if not roles:
+            print(" Sin roles en el corpus; no se genera el grafico.")
+            return
+
+        total = len(roles) + sin_rol
+        serie = pd.Series(roles)
+        conteo = serie.value_counts()
+        self._barras(conteo,
+                     "Roles de las personas mencionadas",
+                     f"{len(roles)} personas con rol · {serie.nunique()} categorías "
+                     f"agrupadas desde 36 · {sin_rol} personas "
+                     f"({100 * sin_rol / total:.0f}%) sin rol declarado",
+                     "Personas",
+                     "12_roles_personas.png")
 
     def ejecutar(self) -> None:
             """Corre todas las visualizaciones pedidas en la guía."""
@@ -402,6 +433,7 @@ class ExploradorDatos:
                 ("Tipos de relaciones frecuentes", self.tipos_relaciones_frecuentes),
                 ("Densidad de entidades por noticia", self.densidad_entidades_por_noticia),
                 ("Delitos por zona", self.delitos_por_zona),
+                ("Roles de personas", self.roles_de_personas),
             )
             
             for nombre, metodo in graficos:
