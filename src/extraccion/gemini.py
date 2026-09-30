@@ -1,7 +1,4 @@
 """Contrato de extracción con un LLM.
-
-TODO(alumno): completar ExtractorGemini. El laboratorio NO inventa datos:
-solo se extrae información explícita en la noticia, en JSON válido.
 """
 
 from __future__ import annotations
@@ -33,18 +30,24 @@ class ExtractorLLM(ABC):
 class ExtractorGemini(ExtractorLLM):
     """Extractor oficial del laboratorio (Gemini).
 
-    Pasos sugeridos:
-    1. Cargar GEMINI_API_KEY desde .env (nunca hardcodear la clave).
-    2. Leer data/processed/{id_noticia}.txt
-    3. Llamar al modelo (p. ej. gemini-1.5-flash) con construir_prompt().
-    4. Devolver exclusivamente JSON válido (sin markdown ni explicaciones).
-    5. Si un campo no aparece en la noticia, usar null o lista vacía.
+    Pasos:
+    1. Carga GEMINI_API_KEY desde .env.
+    2. Lee data/processed/{id_noticia}.txt
+    3. Llama al modelo gemini-3.8-flash con construir_prompt().
+    4. Devuelve exclusivamente JSON válido.
+    5. Si un campo no aparece en la noticia, usa null o lista vacía.
     """
 
     def __init__(
             self,
             repositorio: RepositorioNoticias | None = None,
-            ):
+        ):
+        """Configura el cliente de Gemini
+
+        Lee GEMINI_API_KEY y GEMINI_MODEL desde .env.
+        Obtiene, o crea, un repositorio.
+        
+        """
 
         self.repositorio = repositorio or RepositorioNoticias()
 
@@ -68,6 +71,11 @@ class ExtractorGemini(ExtractorLLM):
     ]
 
     def construir_prompt(self, noticia: NoticiaFuente) -> str:
+        """ Retorna el prompt a utilizar para la extracción de una noticia.
+
+        Incluye reglas sobre la alucinación del LLM, además de los campos obligatorios que debe 
+        tener.
+        """
 
         return f"""
             Eres un sistema de extracción de información. Tu única tarea es
@@ -126,6 +134,11 @@ class ExtractorGemini(ExtractorLLM):
 
 
     def extraer(self, noticia: NoticiaFuente) -> dict:
+        """Realiza la llamada al LLM y parsea su respuesta,
+        retornando el JSON resultante.
+
+        Devuelve el JSON o None si la extracción falla en cualquiera de sus etapas.
+        """
         try:
 
             response = self.model.generate_content(

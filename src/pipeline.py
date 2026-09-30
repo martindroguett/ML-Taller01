@@ -114,6 +114,8 @@ class PipelineLaboratorio:
         return ok, fallos
 
     def ejecutar_extraccion(self) -> None:
+        """Por cada noticia, extrae y valida su información a través de archivos JSON"""
+
         exitos = 0
         fallos = 0
         saltos = 0
