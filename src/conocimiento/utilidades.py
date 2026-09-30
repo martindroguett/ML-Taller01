@@ -76,6 +76,19 @@ AGRUPACIONES = {
     "automovil": "vehiculo",
     "automoviles": "vehiculo",
     "camioneta": "vehiculo",
+    "region_metropolitana": "santiago",
+    "region_metropolitana_de_santiago": "santiago",
+    "rm": "santiago",
+    "santiago_de_chile": "santiago",
+    "provincia_de_santiago": "santiago",
+    "region_metropolitana": "santiago",
+    "rm": "santiago",
+    "santiago_de_chile": "santiago",
+    "comuna_de_santiago": "santiago",
+    "centro_de_santiago": "santiago",
+    "santiago_centro": "santiago",
+    "santiago_1": "carcel_santiago_1",
+    "santiago_uno": "carcel_santiago_1",
 }
 
 #Categorias amplias para el ANALISIS, no para el vault.
